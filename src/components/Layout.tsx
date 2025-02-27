@@ -15,7 +15,7 @@ export default function Layout() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-gray-300">
+    <div className="min-h-screen bg-primary">
       <div className="flex">
         {/* Sidebar */}
         <div className="hidden md:flex md:w-64 md:flex-col">
