@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { UserGroupIcon, UsersIcon, CalendarIcon, CurrencyDollarIcon } from '@heroicons/react/16/solid';
+import { UserGroupIcon, UsersIcon, CalendarIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 
 export default function Dashboard() {
   const { data: stats, isLoading } = useQuery({
@@ -29,7 +29,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900">Panel</h1>
+      <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
       
       <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="bg-white overflow-hidden shadow rounded-lg">
@@ -40,7 +40,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Trabajadores</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total Workers</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats?.workers}</dd>
                 </dl>
               </div>
@@ -56,7 +56,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Clientes</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total Clients</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats?.clients}</dd>
                 </dl>
               </div>
@@ -72,7 +72,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Reservas activas</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Active Appointments</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats?.appointments}</dd>
                 </dl>
               </div>
@@ -88,7 +88,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Facturas</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total Invoices</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats?.invoices}</dd>
                 </dl>
               </div>

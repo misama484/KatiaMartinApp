@@ -1,23 +1,36 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import React, { useState } from 'react';
+import { useClients } from '../hooks/useClients';
+import ClientModal from '../components/modals/ClientModal';
+import { Client } from '../lib/api/clientsApi';
+import { PencilIcon } from '@heroicons/react/24/outline';
 
 export default function Clients() {
-  const { data: clients, isLoading } = useQuery({
-    queryKey: ['clients'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const { data: clientsData, isLoading } = useClients();
 
-      if (error) throw error;
-      return data;
-    },
-  });
+  const openAddModal = () => {
+    setSelectedClient(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (client: Client) => {
+    setSelectedClient(client);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    // Small delay to avoid visual glitches when switching between add/edit modes
+    setTimeout(() => {
+      setSelectedClient(null);
+    }, 200);
+  };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    </div>;
   }
 
   return (
@@ -32,6 +45,7 @@ export default function Clients() {
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
           <button
             type="button"
+            onClick={openAddModal}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
           >
             Add client
@@ -63,7 +77,7 @@ export default function Clients() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {clients?.map((client) => (
+                  {clientsData?.data?.map((client) => (
                     <tr key={client.id}>
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                         {client.first_name} {client.last_name}
@@ -71,21 +85,44 @@ export default function Clients() {
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{client.phone}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{client.address}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {client.emergency_contact_name} ({client.emergency_contact_phone})
+                        {client.emergency_contact_name ? (
+                          <>
+                            {client.emergency_contact_name} ({client.emergency_contact_phone})
+                          </>
+                        ) : (
+                          <span className="text-gray-400">None</span>
+                        )}
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <button className="text-indigo-600 hover:text-indigo-900">
+                        <button 
+                          onClick={() => openEditModal(client)}
+                          className="inline-flex items-center text-indigo-600 hover:text-indigo-900"
+                        >
+                          <PencilIcon className="h-4 w-4 mr-1" />
                           Edit
                         </button>
                       </td>
                     </tr>
                   ))}
+                  {clientsData?.data?.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="py-4 text-center text-sm text-gray-500">
+                        No clients found. Add a new client to get started.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
       </div>
+
+      <ClientModal 
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+        client={selectedClient} 
+      />
     </div>
   );
 }

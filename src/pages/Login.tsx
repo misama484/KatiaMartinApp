@@ -17,8 +17,9 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
+        
       });
-
+      
       if (error) throw error;
       
       navigate('/');
