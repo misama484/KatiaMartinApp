@@ -1,27 +1,43 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import React, { useState } from 'react';
+import { useInvoices } from '../hooks/useInvoices';
+//import InvoiceModal from '../components/modals/InvoiceModal';
+import { Invoice } from '../lib/api/invoicesApi';
 import { format } from 'date-fns';
+import { PencilIcon, EyeIcon } from '@heroicons/react/24/outline';
 
 export default function Invoices() {
-  const { data: invoices, isLoading } = useQuery({
-    queryKey: ['invoices'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('invoices')
-        .select(`
-          *,
-          client:clients(first_name, last_name)
-        `)
-        .order('created_at', { ascending: false });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const { data: invoicesData, isLoading } = useInvoices();
 
-      if (error) throw error;
-      return data;
-    },
-  });
+  const openAddModal = () => {
+    setSelectedInvoice(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    // Small delay to avoid visual glitches when switching between add/edit modes
+    setTimeout(() => {
+      setSelectedInvoice(null);
+    }, 200);
+  };
+
+  // Filter invoices by status if a filter is selected
+  const filteredInvoices = invoicesData?.data?.filter(invoice => 
+    !statusFilter || invoice.status === statusFilter
+  );
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    </div>;
   }
 
   return (
@@ -33,9 +49,25 @@ export default function Invoices() {
             A list of all invoices including client, amount, and payment status.
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex items-center space-x-3">
+          <div>
+            <label htmlFor="status-filter" className="sr-only">Filter by status</label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              <option value="">All Statuses</option>
+              <option value="draft">Draft</option>
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
           <button
             type="button"
+            onClick={openAddModal}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
           >
             Create invoice
@@ -65,12 +97,12 @@ export default function Invoices() {
                       Due Date
                     </th>
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                      <span className="sr-only">View</span>
+                      <span className="sr-only">Actions</span>
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {invoices?.map((invoice) => (
+                  {filteredInvoices?.map((invoice) => (
                     <tr key={invoice.id}>
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                         {format(new Date(invoice.created_at), 'PP')}
@@ -79,7 +111,7 @@ export default function Invoices() {
                         {invoice.client.first_name} {invoice.client.last_name}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        ${invoice.amount}
+                        ${invoice.amount.toFixed(2)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
@@ -95,18 +127,35 @@ export default function Invoices() {
                         {format(new Date(invoice.due_date), 'PP')}
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <button className="text-indigo-600 hover:text-indigo-900">
-                          View
+                        <button 
+                          onClick={() => openEditModal(invoice)}
+                          className="inline-flex items-center text-indigo-600 hover:text-indigo-900 mr-4"
+                        >
+                          <PencilIcon className="h-4 w-4 mr-1" />
+                          Edit
                         </button>
                       </td>
                     </tr>
                   ))}
+                  {filteredInvoices?.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-4 text-center text-sm text-gray-500">
+                        {statusFilter ? `No invoices found with status "${statusFilter}".` : 'No invoices found. Create a new invoice to get started.'}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
       </div>
+
+      {/*<InvoiceModal 
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+        invoice={selectedInvoice} 
+      />*/}
     </div>
   );
 }

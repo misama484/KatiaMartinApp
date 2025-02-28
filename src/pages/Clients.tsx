@@ -12,7 +12,7 @@ export default function Clients() {
   const openAddModal = () => {
     setSelectedClient(null);
     setIsModalOpen(true);
-  }; 
+  };
 
   const openEditModal = (client: Client) => {
     setSelectedClient(client);

@@ -1,57 +1,48 @@
-import React, { useState} from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
-import { PencilIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import React, { useState } from 'react';
 import { useWorkers } from '../hooks/useWorkers';
 import WorkerModal from '../components/modals/WorkerModal';
 import { Worker } from '../lib/api/workersApi';
-
+import { PencilIcon } from '@heroicons/react/24/outline';
 
 export default function Workers() {
-  /*const { data: workers, isLoading } = useQuery({
-    queryKey: ['workers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('workers')
-        .select('*')
-        .order('created_at', { ascending: false });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
+  const [roleFilter, setRoleFilter] = useState<string>('');
+  const { data: workersData, isLoading } = useWorkers();
 
-      if (error) throw error;
-      return data;
-    },
-  });
+  const openAddModal = () => {
+    setSelectedWorker(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (worker: Worker) => {
+    setSelectedWorker(worker);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    // Small delay to avoid visual glitches when switching between add/edit modes
+    setTimeout(() => {
+      setSelectedWorker(null);
+    }, 200);
+  };
+
+  // Filter workers by role if a filter is selected
+  const filteredWorkers = workersData?.data?.filter(worker => 
+    !roleFilter || worker.role === roleFilter
+  );
+
+  // Get unique roles for the filter dropdown
+  const uniqueRoles = workersData?.data 
+    ? Array.from(new Set(workersData.data.map(worker => worker.role)))
+    : [];
 
   if (isLoading) {
-    return <div>Loading...</div>;
-  }*/
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedWorker, setSelectedWorker] = useState<Worker | null | undefined>(null);
-    const { data: workersData, isLoading } = useWorkers();
-  
-    const openAddModal = () => {
-      setSelectedWorker(null);
-      setIsModalOpen(true);
-    }; 
-  
-    const openEditModal = (worker: Worker) => {
-      setSelectedWorker(worker);
-      setIsModalOpen(true);
-    };
-  
-    const closeModal = () => {
-      setIsModalOpen(false);
-      // Small delay to avoid visual glitches when switching between add/edit modes
-      setTimeout(() => {
-        setSelectedWorker(null);
-      }, 200);
-    };
-  
-    if (isLoading) {
-      return <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>;
-    }
+    return <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    </div>;
+  }
 
   return (
     <div>
@@ -62,7 +53,21 @@ export default function Workers() {
             A list of all care workers including their name, role, and contact information.
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex items-center space-x-3">
+          <div>
+            <label htmlFor="role-filter" className="sr-only">Filter by role</label>
+            <select
+              id="role-filter"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              <option value="">All Roles</option>
+              {uniqueRoles.map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
             onClick={openAddModal}
@@ -91,22 +96,32 @@ export default function Workers() {
                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                       Phone
                     </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      Status
+                    </th>
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
                       <span className="sr-only">Edit</span>
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {workersData?.data?.map((worker) => (
+                  {filteredWorkers?.map((worker) => (
                     <tr key={worker.id}>
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                         {worker.first_name} {worker.last_name}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{worker.role}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{worker.email}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{worker.phone}</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{worker.phone || '-'}</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+                          worker.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {worker.active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                      <button 
+                        <button 
                           onClick={() => openEditModal(worker)}
                           className="inline-flex items-center text-indigo-600 hover:text-indigo-900"
                         >
@@ -116,10 +131,10 @@ export default function Workers() {
                       </td>
                     </tr>
                   ))}
-                  {workersData?.data?.length === 0 && (
+                  {filteredWorkers?.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-4 text-center text-sm text-gray-500">
-                        No workers found. Add a new worker to get started.
+                      <td colSpan={6} className="py-4 text-center text-sm text-gray-500">
+                        {roleFilter ? `No workers found with role "${roleFilter}".` : 'No workers found. Add a new worker to get started.'}
                       </td>
                     </tr>
                   )}
@@ -131,10 +146,10 @@ export default function Workers() {
       </div>
 
       <WorkerModal 
-              isOpen={isModalOpen} 
-              onClose={closeModal} 
-              worker={selectedWorker} 
-            />
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+        worker={selectedWorker} 
+      />
     </div>
   );
 }

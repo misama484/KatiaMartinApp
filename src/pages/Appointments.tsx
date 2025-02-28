@@ -1,114 +1,236 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import { useWorkers } from '../hooks/useWorkers';
+//import AppointmentModal from '../components/modals/AppointmentModal';
+import { Appointment } from '../lib/api/appointmentsApi';
 
 export default function Appointments() {
-  const { data: appointments, isLoading } = useQuery({
-    queryKey: ['appointments'],
+  const calendarRef = useRef<FullCalendar>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
+  const [workerFilter, setWorkerFilter] = useState<string>('');
+  const [viewType, setViewType] = useState<'timeGridWeek' | 'dayGridMonth'>('timeGridWeek');
+
+  // Fetch workers for filter dropdown
+  const { data: workersData } = useWorkers({ active: true });
+
+  // Fetch appointments
+  const { data: appointmentsData, refetch: refetchAppointments } = useQuery({
+    queryKey: ['appointments', workerFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('appointments')
         .select(`
           *,
           client:clients(first_name, last_name),
           worker:workers(first_name, last_name),
           service:services(name)
-        `)
-        .order('start_time', { ascending: true });
-
+        `);
+      
+      if (workerFilter) {
+        query = query.eq('worker_id', workerFilter);
+      }
+      
+      const { data, error } = await query;
+      
       if (error) throw error;
       return data;
     },
   });
 
-  if (isLoading) {
-    return <div>Loading...</div>;
+  // Format appointments for calendar
+  const events = appointmentsData?.map(appointment => ({
+    id: appointment.id,
+    title: `${appointment.client.first_name} ${appointment.client.last_name} - ${appointment.service.name}`,
+    start: appointment.start_time,
+    end: appointment.end_time,
+    extendedProps: {
+      appointment: appointment
+    },
+    backgroundColor: getStatusColor(appointment.status),
+    borderColor: getStatusColor(appointment.status)
+  })) || [];
+
+  // Helper function to get color based on status
+  function getStatusColor(status: string) {
+    switch (status) {
+      case 'completed':
+        return '#10B981'; // green
+      case 'in_progress':
+        return '#3B82F6'; // blue
+      case 'cancelled':
+        return '#EF4444'; // red
+      default:
+        return '#8B5CF6'; // purple (scheduled)
+    }
   }
+
+  // Handle date click to create new appointment
+  const handleDateClick = (info: any) => {
+    setSelectedDate(info.date);
+    setSelectedAppointment(null);
+    setIsModalOpen(true);
+  };
+
+  // Handle event click to edit appointment
+  const handleEventClick = (info: any) => {
+    const appointment = info.event.extendedProps.appointment;
+    setSelectedAppointment(appointment);
+    setSelectedDate(null);
+    setIsModalOpen(true);
+  };
+
+  // Handle worker filter change
+  const handleWorkerFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setWorkerFilter(e.target.value);
+  };
+
+  // Handle view type change
+  const handleViewChange = (viewType: 'timeGridWeek' | 'dayGridMonth') => {
+    setViewType(viewType);
+    if (calendarRef.current) {
+      calendarRef.current.getApi().changeView(viewType);
+    }
+  };
+
+  // Close modal and refresh data
+  const closeModal = () => {
+    setIsModalOpen(false);
+    refetchAppointments();
+    // Small delay to avoid visual glitches
+    setTimeout(() => {
+      setSelectedAppointment(null);
+      setSelectedDate(null);
+    }, 200);
+  };
 
   return (
     <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
+      <div className="sm:flex sm:items-center sm:justify-between">
+        <div>
           <h1 className="text-2xl font-semibold text-gray-900">Appointments</h1>
           <p className="mt-2 text-sm text-gray-700">
-            A list of all appointments including client, worker, and service details.
+            View and manage all appointments in the calendar.
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+          <div>
+            <label htmlFor="worker-filter" className="sr-only">Filter by worker</label>
+            <select
+              id="worker-filter"
+              value={workerFilter}
+              onChange={handleWorkerFilterChange}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              <option value="">All Workers</option>
+              {workersData?.data?.map(worker => (
+                <option key={worker.id} value={worker.id}>
+                  {worker.first_name} {worker.last_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex rounded-md shadow-sm" role="group">
+            <button
+              type="button"
+              onClick={() => handleViewChange('timeGridWeek')}
+              className={`px-4 py-2 text-sm font-medium ${
+                viewType === 'timeGridWeek'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              } border border-gray-300 rounded-l-md`}
+            >
+              Week
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewChange('dayGridMonth')}
+              className={`px-4 py-2 text-sm font-medium ${
+                viewType === 'dayGridMonth'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              } border border-gray-300 rounded-r-md`}
+            >
+              Month
+            </button>
+          </div>
           <button
             type="button"
+            onClick={() => {
+              setSelectedDate(new Date());
+              setSelectedAppointment(null);
+              setIsModalOpen(true);
+            }}
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
           >
             Schedule appointment
           </button>
         </div>
       </div>
-      <div className="mt-8 flex flex-col">
-        <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                      Date & Time
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Client
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Worker
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Service
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Status
-                    </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                      <span className="sr-only">Edit</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {appointments?.map((appointment) => (
-                    <tr key={appointment.id}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                        {format(new Date(appointment.start_time), 'PPp')}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {appointment.client.first_name} {appointment.client.last_name}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {appointment.worker.first_name} {appointment.worker.last_name}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {appointment.service.name}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                          appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          appointment.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                          appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {appointment.status}
-                        </span>
-                      </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <button className="text-indigo-600 hover:text-indigo-900">
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+
+      <div className="mt-6 bg-white p-4 rounded-lg shadow">
+        <div className="calendar-container" style={{ height: 'calc(100vh - 250px)' }}>
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView={viewType}
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: ''
+            }}
+            events={events}
+            dateClick={handleDateClick}
+            eventClick={handleEventClick}
+            slotMinTime="08:00:00"
+            slotMaxTime="20:00:00"
+            allDaySlot={false}
+            height="100%"
+            slotDuration="00:30:00"
+            nowIndicator={true}
+            businessHours={{
+              daysOfWeek: [1, 2, 3, 4, 5], // Monday - Friday
+              startTime: '08:00',
+              endTime: '18:00',
+            }}
+          />
         </div>
       </div>
+
+      <div className="mt-4 flex items-center space-x-4">
+        <div className="flex items-center">
+          <span className="inline-block w-3 h-3 rounded-full bg-purple-500 mr-2"></span>
+          <span className="text-sm text-gray-600">Scheduled</span>
+        </div>
+        <div className="flex items-center">
+          <span className="inline-block w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
+          <span className="text-sm text-gray-600">In Progress</span>
+        </div>
+        <div className="flex items-center">
+          <span className="inline-block w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+          <span className="text-sm text-gray-600">Completed</span>
+        </div>
+        <div className="flex items-center">
+          <span className="inline-block w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+          <span className="text-sm text-gray-600">Cancelled</span>
+        </div>
+      </div>
+
+      {/*<AppointmentModal 
+        isOpen={isModalOpen} 
+        onClose={closeModal} 
+        appointment={selectedAppointment}
+        selectedDate={selectedDate || undefined}
+        selectedWorkerId={selectedWorkerId || workerFilter || undefined}
+      />*/}
     </div>
   );
 }

@@ -10,6 +10,27 @@ interface WorkerModalProps {
   worker?: Worker | null; // If provided, we're in edit mode
 }
 
+const ROLE_OPTIONS = [
+  'Caregiver',
+  'Nurse',
+  'Physical Therapist',
+  'Occupational Therapist',
+  'Social Worker',
+  'Nutritionist',
+  'Administrator'
+];
+
+// Days of the week for availability
+const DAYS_OF_WEEK = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday'
+];
+
 export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProps) {
   const isEditMode = !!worker;
   
@@ -18,9 +39,9 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
     last_name: '',
     email: '',
     phone: '',
-    role: '',
-    availability: '',
-    //active: ''
+    role: 'Caregiver',
+    availability: {},
+    active: true
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -36,11 +57,11 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
       setFormData({
         first_name: worker.first_name,
         last_name: worker.last_name,
-        email: worker.email || '',
-        phone: worker.phone,
+        email: worker.email,
+        phone: worker.phone || '',
         role: worker.role,
-        availability: worker.availability || '',
-        //active: worker.active || '',
+        availability: worker.availability || {},
+        active: worker.active !== false // Default to true if not specified
       });
     } else {
       resetForm();
@@ -59,29 +80,36 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
       newErrors.last_name = 'Last name is required';
     }
     
-    if (!formData.phone?.trim()) {
-      newErrors.phone = 'Phone number is required';
-    }
-    
-    if (!formData.role.trim()) {
-      newErrors.role = 'Role is required';
-    }
-    
-    // Email format validation (if provided)
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
+    }
+    
+    if (!formData.role) {
+      newErrors.role = 'Role is required';
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    
+    // Handle checkbox inputs
+    if (type === 'checkbox') {
+      const checkbox = e.target as HTMLInputElement;
+      setFormData(prev => ({
+        ...prev,
+        [name]: checkbox.checked
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
     
     // Clear error when user types
     if (errors[name]) {
@@ -90,6 +118,30 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
         [name]: ''
       }));
     }
+  };
+
+  const handleAvailabilityChange = (day: string, timeRange: string, value: string) => {
+    setFormData(prev => {
+      const newAvailability = { ...prev.availability };
+      
+      if (!newAvailability[day]) {
+        newAvailability[day] = {};
+      }
+      
+      newAvailability[day][timeRange] = value;
+      
+      return {
+        ...prev,
+        availability: newAvailability
+      };
+    });
+  };
+
+  const getAvailabilityValue = (day: string, timeRange: string): string => {
+    if (!formData.availability || !formData.availability[day]) {
+      return '';
+    }
+    return formData.availability[day][timeRange] || '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -134,9 +186,9 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
       last_name: '',
       email: '',
       phone: '',
-      role: '',
-      availability: '',
-      //active: '',
+      role: 'Caregiver',
+      availability: {},
+      active: true
     });
     setErrors({});
     setShowDeleteConfirm(false);
@@ -224,7 +276,7 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
                     <div>
                       <div className="mt-3 text-center sm:mt-0 sm:text-left">
                         <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
-                          {isEditMode ? 'Edit Client' : 'Add New Client'}
+                          {isEditMode ? 'Edit Worker' : 'Add New Worker'}
                         </Dialog.Title>
                         <div className="mt-2">
                           <p className="text-sm text-gray-500">
@@ -276,7 +328,7 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
 
                         <div>
                           <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                            Email
+                            Email *
                           </label>
                           <input
                             type="email"
@@ -295,7 +347,7 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
 
                         <div>
                           <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                            Phone *
+                            Phone
                           </label>
                           <input
                             type="tel"
@@ -303,33 +355,86 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
                             id="phone"
                             value={formData.phone}
                             onChange={handleChange}
-                            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                              errors.phone ? 'border-red-300' : ''
-                            }`}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           />
-                          {errors.phone && (
-                            <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                          )}
                         </div>
 
-                        <div className="sm:col-span-2">
-                          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                            role *
+                        <div>
+                          <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                            Role *
                           </label>
-                          <input
-                            type="text"
-                            name="role"
+                          <select
                             id="role"
+                            name="role"
                             value={formData.role}
                             onChange={handleChange}
                             className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                               errors.role ? 'border-red-300' : ''
                             }`}
-                          />
+                          >
+                            {ROLE_OPTIONS.map(role => (
+                              <option key={role} value={role}>{role}</option>
+                            ))}
+                          </select>
                           {errors.role && (
                             <p className="mt-1 text-sm text-red-600">{errors.role}</p>
                           )}
-                        </div>                    
+                        </div>
+
+                        <div>
+                          <div className="flex items-center">
+                            <input
+                              id="active"
+                              name="active"
+                              type="checkbox"
+                              checked={formData.active}
+                              onChange={handleChange}
+                              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <label htmlFor="active" className="ml-2 block text-sm font-medium text-gray-700">
+                              Active
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="sm:col-span-2 mt-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Availability</h4>
+                          <div className="space-y-4">
+                            {DAYS_OF_WEEK.map(day => (
+                              <div key={day} className="grid grid-cols-3 gap-2">
+                                <div className="text-sm font-medium text-gray-700">{day}</div>
+                                <div>
+                                  <label htmlFor={`${day}-morning`} className="block text-xs text-gray-500">
+                                    Morning (8AM-12PM)
+                                  </label>
+                                  <select
+                                    id={`${day}-morning`}
+                                    value={getAvailabilityValue(day, 'morning')}
+                                    onChange={(e) => handleAvailabilityChange(day, 'morning', e.target.value)}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs"
+                                  >
+                                    <option value="">Not Available</option>
+                                    <option value="available">Available</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label htmlFor={`${day}-afternoon`} className="block text-xs text-gray-500">
+                                    Afternoon (1PM-5PM)
+                                  </label>
+                                  <select
+                                    id={`${day}-afternoon`}
+                                    value={getAvailabilityValue(day, 'afternoon')}
+                                    onChange={(e) => handleAvailabilityChange(day, 'afternoon', e.target.value)}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs"
+                                  >
+                                    <option value="">Not Available</option>
+                                    <option value="available">Available</option>
+                                  </select>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
@@ -340,7 +445,7 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
                         >
                           {isPending ? 
                             (isEditMode ? 'Updating...' : 'Adding...') : 
-                            (isEditMode ? 'Update Client' : 'Add Client')}
+                            (isEditMode ? 'Update Worker' : 'Add Worker')}
                         </button>
                         {isEditMode ? (
                           <button
