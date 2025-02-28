@@ -8,7 +8,7 @@ export default {
     backgroundColor: theme => ({
       ...theme('colors'),
       'primary': '#3a8276',
-      'secondary': '#ffed4a',
+      'secondary': 'gray-500',
       'popup': '#e3342f',
     }),
     extend: {},

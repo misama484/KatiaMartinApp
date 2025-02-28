@@ -175,7 +175,7 @@ export default function ClientModal({ isOpen, onClose, client }: ClientModalProp
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-gray-500 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                 {showDeleteConfirm ? (
                   <div>
                     <div className="sm:flex sm:items-start">
@@ -187,7 +187,7 @@ export default function ClientModal({ isOpen, onClose, client }: ClientModalProp
                           Delete Client
                         </Dialog.Title>
                         <div className="mt-2">
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-white">
                             Are you sure you want to delete this client? This action cannot be undone.
                           </p>
                         </div>
@@ -227,11 +227,11 @@ export default function ClientModal({ isOpen, onClose, client }: ClientModalProp
                     <div>
                       <div className="mt-3 text-center sm:mt-0 sm:text-left">
                         <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
-                          {isEditMode ? 'Edit Client' : 'Add New Client'}
+                          {isEditMode ? 'Editar Cliente' : 'Añadir cliente'}
                         </Dialog.Title>
                         <div className="mt-2">
-                          <p className="text-sm text-gray-500">
-                            Please fill in the client information below. Fields marked with * are required.
+                          <p className="text-sm text-white">
+                            Rellene los campos indicados. Los marcados con * son obligatorios.
                           </p>
                         </div>
                       </div>
@@ -241,7 +241,7 @@ export default function ClientModal({ isOpen, onClose, client }: ClientModalProp
                       <div className="grid grid-cols-1 gap-y-4 gap-x-4 sm:grid-cols-2">
                         <div>
                           <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
-                            First Name *
+                            Nombre *
                           </label>
                           <input
                             type="text"
@@ -260,7 +260,7 @@ export default function ClientModal({ isOpen, onClose, client }: ClientModalProp
 
                         <div>
                           <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
-                            Last Name *
+                            Apellido *
                           </label>
                           <input
                             type="text"
