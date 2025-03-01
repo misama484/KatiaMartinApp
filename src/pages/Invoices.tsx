@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useInvoices } from '../hooks/useInvoices';
-//import InvoiceModal from '../components/modals/InvoiceModal';
+import InvoiceModal from '../components/modals/InvoiceModal';
 import { Invoice } from '../lib/api/invoicesApi';
 import { format } from 'date-fns';
 import { PencilIcon, EyeIcon } from '@heroicons/react/24/outline';
@@ -151,11 +151,11 @@ export default function Invoices() {
         </div>
       </div>
 
-      {/*<InvoiceModal 
+      <InvoiceModal 
         isOpen={isModalOpen} 
         onClose={closeModal} 
         invoice={selectedInvoice} 
-      />*/}
+      />
     </div>
   );
 }

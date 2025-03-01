@@ -7,7 +7,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useWorkers } from '../hooks/useWorkers';
-//import AppointmentModal from '../components/modals/AppointmentModal';
+import AppointmentModal from '../components/modals/AppointmentModal';
 import { Appointment } from '../lib/api/appointmentsApi';
 
 export default function Appointments() {
@@ -224,13 +224,13 @@ export default function Appointments() {
         </div>
       </div>
 
-      {/*<AppointmentModal 
+      <AppointmentModal 
         isOpen={isModalOpen} 
         onClose={closeModal} 
         appointment={selectedAppointment}
         selectedDate={selectedDate || undefined}
         selectedWorkerId={selectedWorkerId || workerFilter || undefined}
-      />*/}
+      />
     </div>
   );
 }
