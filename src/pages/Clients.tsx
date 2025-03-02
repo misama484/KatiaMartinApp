@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useClients } from '../hooks/useClients';
 import ClientModal from '../components/modals/ClientModal';
+import ClientDetailsModal from '../components/modals/ClientDetailsModal';
 import { Client } from '../lib/api/clientsApi';
 import { PencilIcon } from '@heroicons/react/24/outline';
+import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
+import ModeEditIcon from '@mui/icons-material/ModeEdit';
 
 export default function Clients() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const { data: clientsData, isLoading } = useClients();
 
@@ -19,9 +23,22 @@ export default function Clients() {
     setIsModalOpen(true);
   };
 
+  const openDetailsModal = (client: Client) => {
+    setSelectedClient(client);
+    setIsDetailsModalOpen(true);
+  };
+
+
   const closeModal = () => {
     setIsModalOpen(false);
     // Small delay to avoid visual glitches when switching between add/edit modes
+    setTimeout(() => {
+      setSelectedClient(null);
+    }, 200);
+  };
+
+  const closeDetailsModal = () => {
+    setIsDetailsModalOpen(false);
     setTimeout(() => {
       setSelectedClient(null);
     }, 200);
@@ -95,10 +112,18 @@ export default function Clients() {
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                         <button 
+                          onClick={() => openDetailsModal(client)}
+                          className="inline-flex items-center text-indigo-600 hover:text-indigo-900 mr-4"
+                        >
+                          <ManageHistoryIcon className="h-4 w-4 mr-1" />
+                          Detalles
+                        </button>
+
+                        <button 
                           onClick={() => openEditModal(client)}
                           className="inline-flex items-center text-indigo-600 hover:text-indigo-900"
                         >
-                          <PencilIcon className="h-4 w-4 mr-1" />
+                          <ModeEditIcon className="h-4 w-4 mr-1" />
                           Edit
                         </button>
                       </td>
@@ -122,6 +147,13 @@ export default function Clients() {
         isOpen={isModalOpen} 
         onClose={closeModal} 
         client={selectedClient} 
+      />
+
+      <ClientDetailsModal 
+        isOpen={isDetailsModalOpen} 
+        onClose={closeDetailsModal} 
+        clientId={selectedClient?.id}
+        clientName={`${selectedClient?.first_name} ${selectedClient?.last_name}`} 
       />
     </div>
   );

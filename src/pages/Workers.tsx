@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { useWorkers } from '../hooks/useWorkers';
 import WorkerModal from '../components/modals/WorkerModal';
+import WorkerDetailsModal from '../components/modals/WorkerDetailsModal';
 import { Worker } from '../lib/api/workersApi';
 import { PencilIcon } from '@heroicons/react/24/outline';
+import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
+import ModeEditIcon from '@mui/icons-material/ModeEdit';
+
+
 
 export default function Workers() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [roleFilter, setRoleFilter] = useState<string>('');
   const { data: workersData, isLoading } = useWorkers();
@@ -20,6 +26,12 @@ export default function Workers() {
     setIsModalOpen(true);
   };
 
+  // Control details modal visibility
+  const openDetailsModal = (worker: Worker) => {
+    setSelectedWorker(worker);
+    setIsDetailsModalOpen(true);
+  };
+
   const closeModal = () => {
     setIsModalOpen(false);
     // Small delay to avoid visual glitches when switching between add/edit modes
@@ -27,6 +39,14 @@ export default function Workers() {
       setSelectedWorker(null);
     }, 200);
   };
+
+  const closeDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setTimeout(() => {
+      setSelectedWorker(null);
+    }, 200);
+  };
+
 
   // Filter workers by role if a filter is selected
   const filteredWorkers = workersData?.data?.filter(worker => 
@@ -122,12 +142,20 @@ export default function Workers() {
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                         <button 
+                          onClick={() => openDetailsModal(worker)}
+                          className="inline-flex items-center text-indigo-600 hover:text-indigo-900 mr-4"
+                        >
+                          <ManageHistoryIcon className="h-4 w-4 mr-1" />
+                          Detalles
+                        </button>
+
+                        <button 
                           onClick={() => openEditModal(worker)}
                           className="inline-flex items-center text-indigo-600 hover:text-indigo-900"
                         >
-                          <PencilIcon className="h-4 w-4 mr-1" />
-                          Edit
-                        </button>
+                          <ModeEditIcon className="h-4 w-4 mr-1" />
+                          Editar
+                        </button>      
                       </td>
                     </tr>
                   ))}
@@ -149,6 +177,13 @@ export default function Workers() {
         isOpen={isModalOpen} 
         onClose={closeModal} 
         worker={selectedWorker} 
+      />
+
+      <WorkerDetailsModal 
+        isOpen={isDetailsModalOpen} 
+        onClose={closeDetailsModal} 
+        workerId={selectedWorker?.id}
+        workerName={selectedWorker?.first_name}
       />
     </div>
   );

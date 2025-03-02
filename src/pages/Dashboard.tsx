@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { UserGroupIcon, UsersIcon, CalendarIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import CalendarDashboard from '../components/CalendarDashboard';
 
 export default function Dashboard() {
   const { data: stats, isLoading } = useQuery({
@@ -96,6 +97,9 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <CalendarDashboard />
+
     </div>
   );
 }

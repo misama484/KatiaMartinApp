@@ -1,8 +1,9 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { HomeIcon, UserGroupIcon, CalendarIcon, CurrencyDollarIcon, UsersIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import SpaIcon from '@mui/icons-material/Spa';
+import { useAuth } from '../hooks/useAuth';
 
 const navigation = [
   { name: 'Panel', href: '/', icon: HomeIcon },
@@ -14,12 +15,23 @@ const navigation = [
 
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen flex bg-primary">
       {/* Sidebar */}
       <div className="hidden md:flex md:w-64 md:flex-col h-full">
-        <div className="flex flex-col flex-grow pt-5 overflow-y-auto bg-gray-500 border-r border-gray-500 rounded-lg shadow h-full m-3">
+        <div className="flex flex-col flex-grow pt-5 overflow-y-auto bg-secondary border-r border-gray-500 rounded-lg shadow h-full m-3">
           <div className="flex items-center flex-shrink-0 px-4">
             <SpaIcon className='m-2 text-gray-800'/>
             <h1 className="text-xl font-semibold text-gray-800">Katia Martin App</h1>
@@ -57,6 +69,15 @@ export default function Layout() {
 
       {/* Main content */}
       <div className="flex flex-col flex-1">
+      <header className="bg-primary text-white p-4 flex justify-between items-center">
+          <div className='flex-1'></div>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Logout
+          </button>
+        </header>
         <main className="flex-1 pb-8">
           <div className="mt-8">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
