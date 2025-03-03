@@ -30,7 +30,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+      <h1 className="text-2xl font-semibold text-gray-900">Panel</h1>
       
       <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="bg-white overflow-hidden shadow rounded-lg">
@@ -41,7 +41,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Workers</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Trabajadores</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats?.workers}</dd>
                 </dl>
               </div>
@@ -57,7 +57,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Clients</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Clientes</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats?.clients}</dd>
                 </dl>
               </div>
@@ -73,7 +73,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Active Appointments</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Reservas</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats?.appointments}</dd>
                 </dl>
               </div>
@@ -89,7 +89,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Invoices</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Facturas</dt>
                   <dd className="text-lg font-medium text-gray-900">{stats?.invoices}</dd>
                 </dl>
               </div>
