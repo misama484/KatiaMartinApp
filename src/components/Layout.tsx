@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { HomeIcon, UserGroupIcon, CalendarIcon, CurrencyDollarIcon, UsersIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
@@ -9,7 +9,7 @@ import { UserCircleIcon } from '@heroicons/react/24/solid';
 
 const navigation = [
   { name: 'Panel', href: '/', icon: HomeIcon },
-  { name: 'Trabajadores', href: '/workers', icon: UserGroupIcon, requiresAdmin: true },
+  { name: 'Trabajadores', href: '/workers', icon: UserGroupIcon, requiresAdmin: false },
   { name: 'Clientes', href: '/clients', icon: UsersIcon },
   { name: 'Reservas', href: '/appointments', icon: CalendarIcon },
   { name: 'Facturas', href: '/invoices', icon: CurrencyDollarIcon, requiresAdmin: true },

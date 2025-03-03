@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import { toast } from 'react-hot-toast';
-import { generateRandomPassword } from '../utils.tsx';
+import { generateRandomPassword } from '../utils';
 
 export type Worker = {
   id?: string;
