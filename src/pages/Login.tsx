@@ -35,12 +35,15 @@ export default function Login() {
     <div className="min-h-screen flex items-start justify-center bg-primary py-12 px-4 sm:px-6 lg:px-8">            
       <div className="max-w-md w-full space-y-8">
       <div className="flex justify-center">
-          <img className="h-42 w-auto my-6" src={logo2} alt="Logo" />
+          <img className="h-42 w-auto my-6 rounded-xl shadow-2xl" src={logo2} alt="Logo" />
         </div>
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Sign in to your account
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Enter your email and password to access the Elderly Care Management System
+          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">

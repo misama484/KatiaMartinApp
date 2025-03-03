@@ -5,6 +5,7 @@ import {
   addWorker, 
   updateWorker, 
   deleteWorker,
+  resetWorkerPassword,
   Worker
 } from '../lib/api/workersApi';
 
@@ -57,3 +58,5 @@ export function useDeleteWorker() {
     },
   });
 }
+
+export { resetWorkerPassword };

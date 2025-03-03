@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
-import { useAddWorker, useUpdateWorker, useDeleteWorker } from '../../hooks/useWorkers';
+import { useAddWorker, useUpdateWorker, useDeleteWorker, resetWorkerPassword } from '../../hooks/useWorkers';
 import { Worker } from '../../lib/api/workersApi';
+import { useAuth } from '../../hooks/useAuth';
 
 interface WorkerModalProps {
   isOpen: boolean;
@@ -11,45 +12,62 @@ interface WorkerModalProps {
 }
 
 const ROLE_OPTIONS = [
-  'Caregiver',
-  'Nurse',
-  'Physical Therapist',
-  'Occupational Therapist',
-  'Social Worker',
-  'Nutritionist',
-  'Administrator'
+  'Cuidador',
+  'Niñera',
+  'Terapeuta',
+  'Fisioterapeuta',
+  'Enfermero',
+  'Nutricionista',
+  'Mantenimiento',
+  'Administrativo',
+  'Tecnico',
+  'Admin'
 ];
+
+const USER_ROLE_OPTIONS = [
+  { value: 'worker', label: 'Worker' },
+  { value: 'admin', label: 'Administrator' }
+]
 
 // Days of the week for availability
 const DAYS_OF_WEEK = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday'
+  'Lunes',
+  'Martes',
+  'Miercoles',
+  'Jueves',
+  'Viernes',
+  'Sabado',
+  'Domingo'
 ];
 
 export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProps) {
   const isEditMode = !!worker;
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState<Omit<Worker, 'id'>>({
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
-    role: 'Caregiver',
+    role: 'Cuidador',
     availability: {},
-    active: true
+    active: true,
+    user_role: 'worker'
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showResetPasswordConfirm, setShowResetPasswordConfirm] = useState(false);
   
   const addWorkerMutation = useAddWorker();
   const updateWorkerMutation = useUpdateWorker();
   const deleteWorkerMutation = useDeleteWorker();
+
+  // Check if current user is an admin
+  const isAdmin = user?.user_metadata?.user_role === 'admin';
+  
+  // Check if current user is editing their own profile
+  const isOwnProfile = worker?.id === user?.id;
 
   // Populate form data when in edit mode
   useEffect(() => {
@@ -61,7 +79,8 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
         phone: worker.phone || '',
         role: worker.role,
         availability: worker.availability || {},
-        active: worker.active !== false // Default to true if not specified
+        active: worker.active !== false, // Default to true if not specified
+        user_role: worker.user_role || 'worker'
       });
     } else {
       resetForm();
@@ -180,18 +199,31 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!worker?.id) return;
+    
+    try {
+      await resetWorkerPassword(worker.id);
+      setShowResetPasswordConfirm(false);
+    } catch (error) {
+      // Error is handled by the mutation and displayed via toast
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       first_name: '',
       last_name: '',
       email: '',
       phone: '',
-      role: 'Caregiver',
+      role: 'Cuidador',
       availability: {},
-      active: true
+      active: true,
+      user_role: 'worker'
     });
     setErrors({});
     setShowDeleteConfirm(false);
+    setShowResetPasswordConfirm(false);
   };
 
   const isPending = addWorkerMutation.isPending || 
@@ -255,6 +287,40 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
                         type="button"
                         className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
                         onClick={() => setShowDeleteConfirm(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : showResetPasswordConfirm ? (
+                  <div>
+                    <div className="sm:flex sm:items-start">
+                      <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" aria-hidden="true" />
+                      </div>
+                      <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                        <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
+                          Reset Password
+                        </Dialog.Title>
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-500">
+                            Are you sure you want to reset this worker's password? They will need to change it on their next login.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                      <button
+                        type="button"
+                        className="inline-flex w-full justify-center rounded-md bg-yellow-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-yellow-500 sm:ml-3 sm:w-auto"
+                        onClick={handleResetPassword}
+                      >
+                        Reset Password
+                      </button>
+                      <button
+                        type="button"
+                        className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                        onClick={() => setShowResetPasswordConfirm(false)}
                       >
                         Cancel
                       </button>
@@ -336,9 +402,10 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
                             id="email"
                             value={formData.email}
                             onChange={handleChange}
+                            disabled={isEditMode && !isAdmin} // Only admins can change email in edit mode
                             className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
                               errors.email ? 'border-red-300' : ''
-                            }`}
+                            } ${isEditMode && !isAdmin ? 'bg-gray-100' : ''}`}
                           />
                           {errors.email && (
                             <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -381,6 +448,26 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
                           )}
                         </div>
 
+                        {/* User Role (Admin only) */}
+                        {isAdmin && (
+                          <div>
+                            <label htmlFor="user_role" className="block text-sm font-medium text-gray-700">
+                              System Role
+                            </label>
+                            <select
+                              id="user_role"
+                              name="user_role"
+                              value={formData.user_role}
+                              onChange={handleChange}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            >
+                              {USER_ROLE_OPTIONS.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
                         <div>
                           <div className="flex items-center">
                             <input
@@ -389,12 +476,16 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
                               type="checkbox"
                               checked={formData.active}
                               onChange={handleChange}
+                              disabled={isEditMode && isOwnProfile} // Can't deactivate own account
                               className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                             />
                             <label htmlFor="active" className="ml-2 block text-sm font-medium text-gray-700">
                               Active
                             </label>
                           </div>
+                          {isEditMode && isOwnProfile && (
+                            <p className="mt-1 text-xs text-gray-500">You cannot deactivate your own account.</p>
+                          )}
                         </div>
 
                         <div className="sm:col-span-2 mt-4">
@@ -410,7 +501,7 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
                                   <select
                                     id={`${day}-morning`}
                                     value={getAvailabilityValue(day, 'morning')}
-                                    onChange={(e) => handleAvailabilityChange(day, 'morning', e.target.value)}
+                                    onChange={(e) => handleAvailabilityChange(day, 'morning', e. target.value)}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-xs"
                                   >
                                     <option value="">Not Available</option>
@@ -447,14 +538,28 @@ export default function WorkerModal({ isOpen, onClose, worker }: WorkerModalProp
                             (isEditMode ? 'Updating...' : 'Adding...') : 
                             (isEditMode ? 'Update Worker' : 'Add Worker')}
                         </button>
+                        
                         {isEditMode ? (
-                          <button
-                            type="button"
-                            onClick={() => setShowDeleteConfirm(true)}
-                            className="mt-3 inline-flex w-full justify-center rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-100 sm:col-start-1 sm:mt-0"
-                          >
-                            Delete Worker
-                          </button>
+                          <div className="mt-3 sm:mt-0 flex space-x-2">
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => setShowResetPasswordConfirm(true)}
+                                className="inline-flex justify-center rounded-md bg-yellow-50 px-3 py-2 text-sm font-semibold text-yellow-700 shadow-sm ring-1 ring-inset ring-yellow-300 hover:bg-yellow-100"
+                              >
+                                Reset Password
+                              </button>
+                            )}
+                            {(isAdmin || !isOwnProfile) && (
+                              <button
+                                type="button"
+                                onClick={() => setShowDeleteConfirm(true)}
+                                className="inline-flex justify-center rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-100"
+                              >
+                                Delete Worker
+                              </button>
+                            )}
+                          </div>
                         ) : (
                           <button
                             type="button"
