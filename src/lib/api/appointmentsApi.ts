@@ -107,17 +107,22 @@ export async function getAppointmentById(id: string) {
 
 export async function addAppointment(appointment: Appointment) {
   try {
-    // Check for worker availability
+    // Check for worker availability using proper time overlap check
     const { data: existingAppointments, error: checkError } = await supabase
       .from('appointments')
       .select('*')
       .eq('worker_id', appointment.worker_id)
-      .or(`start_time.lt.${appointment.end_time},end_time.gt.${appointment.start_time}`);
+      .neq('status', 'cancelled')
+      .or(
+        `and(start_time.lte.${appointment.end_time},end_time.gt.${appointment.start_time}),` +
+        `and(start_time.lt.${appointment.end_time},end_time.gte.${appointment.start_time}),` +
+        `and(start_time.gte.${appointment.start_time},end_time.lte.${appointment.end_time})`
+      );
     
     if (checkError) throw checkError;
     
     if (existingAppointments && existingAppointments.length > 0) {
-      throw new Error('Worker already has an appointment during this time');
+      throw new Error('Worker already has an appointment during this time slot');
     }
     
     const { data, error } = await supabase
@@ -155,18 +160,23 @@ export async function updateAppointment(id: string, updates: Partial<Appointment
       const start_time = updates.start_time || currentAppointment.start_time;
       const end_time = updates.end_time || currentAppointment.end_time;
       
-      // Check for worker availability
+      // Check for worker availability using proper time overlap check
       const { data: existingAppointments, error: checkError } = await supabase
         .from('appointments')
         .select('*')
         .eq('worker_id', worker_id)
         .neq('id', id) // Exclude current appointment
-        .or(`start_time.lt.${end_time},end_time.gt.${start_time}`);
+        .neq('status', 'cancelled')
+        .or(
+          `and(start_time.lte.${end_time},end_time.gt.${start_time}),` +
+          `and(start_time.lt.${end_time},end_time.gte.${start_time}),` +
+          `and(start_time.gte.${start_time},end_time.lte.${end_time})`
+        );
       
       if (checkError) throw checkError;
       
       if (existingAppointments && existingAppointments.length > 0) {
-        throw new Error('Worker already has an appointment during this time');
+        throw new Error('Worker already has an appointment during this time slot');
       }
     }
     
